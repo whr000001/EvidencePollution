@@ -1,0 +1,26 @@
+import os
+from argparse import ArgumentParser
+
+
+parser = ArgumentParser()
+parser.add_argument('--dataset', type=str)
+parser.add_argument('--gpu', type=int)
+args = parser.parse_args()
+
+
+def main():
+    batch_size = 16
+    if args.dataset == 'gossipcop':
+        batch_size = 4
+    if args.dataset == 'politifact':
+        batch_size = 4
+    if args.dataset == 'rumoureval':
+        batch_size = 4
+    for _ in range(10):
+        cmd = f'CUDA_VISIBLE_DEVICES={args.gpu} python train.py --dataset {args.dataset} --run 5 --fold {_}'
+        cmd += f' --batch_size {batch_size}'
+        os.system(cmd)
+
+
+if __name__ == '__main__':
+    main()
