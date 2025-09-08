@@ -1,0 +1,107 @@
+import json
+import os.path
+import torch
+from torch.utils.data import Dataset, DataLoader, Sampler
+from transformers import AutoTokenizer
+from tqdm import tqdm
+
+
+class MySampler(Sampler):
+    def __init__(self, indices, shuffle):
+        super().__init__(None)
+        self.indices = indices
+        if not torch.is_tensor(self.indices):
+            self.indices = torch.tensor(self.indices, dtype=torch.long)
+        self.shuffle = shuffle
+
+    def __iter__(self):
+        if self.shuffle:
+            indices = self.indices[torch.randperm(self.indices.shape[0])]
+        else:
+            indices = self.indices
+        for item in indices:
+            yield item
+
+    def __len__(self):
+        return len(self.indices)
+
+
+class MyDataset(Dataset):
+    def __init__(self, data_path, device):
+        self.max_length = 256
+        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/deberta-v3-large')
+
+        data = json.load(open(data_path))
+        self.data = []
+        label = []
+        for item in data:
+            content = item['content']
+            content = self._word_embedding(content)
+            comments = item['comments']
+            if len(comments) == 0:
+                comments = [' ']
+            each_data = []
+            for comment in comments:
+                comment = [self._word_embedding(comment)]
+                each_data.append({
+                    'label': item['label'],
+                    'content': content,
+                    'comments': comment,
+                })
+            label.append(item['label'])
+            self.data.append(each_data)
+        self.num_class = max(label) + 1
+        self.device = device
+
+    def _word_embedding(self, text):
+        words = self.tokenizer.tokenize(text)
+        words = words[:self.max_length - 2]
+        words = [self.tokenizer.cls_token] + words + [self.tokenizer.sep_token]
+        tokens = self.tokenizer.convert_tokens_to_ids(words)
+        return tokens
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        def _get_batch(tensor_list):
+            max_length = 0
+            input_ids = []
+            token_type_ids = []
+            attention_mask = []
+            for item_ in tensor_list:
+                max_length = max(max_length, len(item_))
+            for item_ in tensor_list:
+                input_ids.append(item_ + [self.tokenizer.pad_token_id] * (max_length - len(item_)))
+                token_type_ids.append([0] * max_length)
+                attention_mask.append([1] * len(item_) + [0] * (max_length - len(item_)))
+            input_ids = torch.tensor(input_ids, dtype=torch.long)
+            token_type_ids = torch.tensor(token_type_ids, dtype=torch.long)
+            attention_mask = torch.tensor(attention_mask, dtype=torch.long)
+            return {
+                'input_ids': input_ids.to(self.device),
+                'token_type_ids': token_type_ids.to(self.device),
+                'attention_mask': attention_mask.to(self.device)
+            }
+        batch = self.data[index]
+        content = []
+        for item in batch:
+            content.append(item['content'])
+        content = _get_batch(content)
+        comment = []
+        comment_batch = []
+        for index, item in enumerate(batch):
+            comment += [_ for _ in item['comments']]
+            comment_batch += [index for _ in range(len(item['comments']))]
+        comment = _get_batch(comment)
+        comment_batch = torch.tensor(comment_batch, dtype=torch.long).to(self.device)
+        label = []
+        for item in batch:
+            label.append(item['label'])
+        label = torch.tensor(label, dtype=torch.long).to(self.device)
+        return {
+            'content': content,
+            'comment': comment,
+            'comment_batch': comment_batch,
+            'label': label
+        }
