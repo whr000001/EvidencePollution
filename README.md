@@ -1,5 +1,5 @@
 # EvidencePollution
-This is the official repository for the paper at ACL2025: [On the Risk of Evidence Pollution for Malicious Social Text Detection in the Era of LLMs](https://arxiv.org/abs/2410.12600).
+This is the official repository for the paper at ACL 2025, oral: [On the Risk of Evidence Pollution for Malicious Social Text Detection in the Era of LLMs](https://arxiv.org/abs/2410.12600).
 
 
 ## Citation
@@ -37,6 +37,9 @@ If you find our work interesting/helpful, please consider citing this paper
 Feel free to open issues in this repository! Instead of emails, GitHub issues are much better at facilitating a conversation between you and our team to address your needs. You can also contact Herun Wan through `wanherun@stu.xjtu.edu.cn`.
 
 ## Updating
+### 20250908
+- We have uploaded the complete resources of EvidencePollution, including codes and related data.
+- We have provided a brief guideline to employ EvidencePollution.
 ### 20250801
 - EvidencePollution is presented orally at ACL 2025!🎉🎉🎉
 
@@ -45,4 +48,4 @@ Feel free to open issues in this repository! Instead of emails, GitHub issues ar
 - We plan to refine this repository.
 
 ### Before
-- We have uploaded related codes, however, it's missing a lot of details.
+- We have uploaded related codes. However, it's missing a lot of details.
